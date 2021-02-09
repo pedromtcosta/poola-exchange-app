@@ -6,7 +6,26 @@ import { Token } from "../models/token";
 import BigNumber from "bignumber.js";
 
 export class PoolaService {
-  contractAddress = "0xF129acEb9d8117a1397A61BaC82c2bda83753250"
+  static network = 'localhost'
+  static addresses: { [network: string]: {poola: string, perfectCoin: string, worthlessCoin: string, dummyCoin: string} } = {
+    "ropsten": {
+      poola: "0xF129acEb9d8117a1397A61BaC82c2bda83753250",
+      perfectCoin: "0xbB34a7E2A070eC193cDdA2df52c2a912f54Ee087",
+      worthlessCoin: "0x5782033F831C661D49cc288e9DFFf02452c93c6F",
+      dummyCoin: "0x281b1FE6C3f29c729bA7D7a6fcee7a9A043Fe118"
+    },
+    "localhost": {
+      poola: "0xcFBf9E75A1fcfBE493c857Ff407062e2F2f1984e",
+      perfectCoin: "0x7bf0FfAA412c3871c3545C3C3d174b594c221eAc",
+      worthlessCoin: "0x47B1d1bD5fbdE99aeA3b5d8Fb5a77BD143CBe5c5",
+      dummyCoin: "0x72cD4CEad49b26984bA7CA135D4c43F18dFCF373"
+    }
+  }
+
+  get contractAddress(): string {
+    return PoolaService.addresses[PoolaService.network].poola
+  }
+
   private static that: PoolaService;
   private web3: Web3;
 
@@ -92,23 +111,23 @@ export class PoolaService {
   static get whitelistedTokens(): Token[] {
     return [
       {
-        address: "0xbB34a7E2A070eC193cDdA2df52c2a912f54Ee087",
+        address: this.addresses[this.network].perfectCoin,
         name: "PerfectCoin",
         symbol: "PFC",
         img: "",
         decimals: 18
       },
       {
-        address: "0x5782033F831C661D49cc288e9DFFf02452c93c6F",
+        address: this.addresses[this.network].worthlessCoin,
         name: "WorthlessCoin",
         symbol: "WTL",
         img: "",
         decimals: 18
       },
       {
-        address: "0x281b1FE6C3f29c729bA7D7a6fcee7a9A043Fe118",
-        name: "StupidCoin",
-        symbol: "STP",
+        address: this.addresses[this.network].dummyCoin,
+        name: "DummyCoin",
+        symbol: "DMM",
         img: "",
         decimals: 18
       }
