@@ -11,6 +11,82 @@
     "type": "constructor"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_poolName",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Buy",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_poolName",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Deposit",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "_poolName",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "_poolsCount",
+        "type": "uint64"
+      }
+    ],
+    "name": "NewPool",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdraw",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -85,7 +161,7 @@
     ],
     "name": "deposit",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -153,11 +229,6 @@
       {
         "internalType": "uint256",
         "name": "size",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "position",
         "type": "uint256"
       }
     ],

@@ -1,11 +1,14 @@
 import { PlusOutlined, ShopOutlined } from "@ant-design/icons";
-import { Button, Card, Col, Descriptions, Row, Spin, Statistic, Form, InputNumber, FormInstance } from "antd";
+import { Button, Card, Col, Descriptions, Row, Spin, Statistic, Form, InputNumber, FormInstance, notification } from "antd";
 import Modal from "antd/lib/modal/Modal";
 import React from "react";
 import {Pool} from "../models/pool";
 import { Token } from "../models/token";
-import { PoolaService } from "../services/poola-service";
 import BigNumber from "bignumber.js";
+import { Web3Provider } from "../utils/Web3Provider";
+import { PoolaContract } from "../abstractions/poola-contract";
+import { Config } from "../utils/Config";
+import { Erc20Contract } from "../abstractions/erc20-contract";
 
 export interface Props {
   poolIndex: number;
@@ -56,15 +59,16 @@ class PoolComponent extends React.Component<Props, PoolComponentState> {
   }
 
   async load() {
+    const poola = PoolaContract.get();
+
     this.setState({
       loading: true
     });
 
-    const poolaService = PoolaService.instance(window);
+    const poolName = await poola.poolNames(this.props.poolIndex);
+    const pool = await poola.pools(poolName);
 
-    const pool = await poolaService.getPool(this.props.poolIndex);
-
-    let token = PoolaService.whitelistedTokens.find(t => t.address === pool.erc20Address);
+    let token = Config.addresses[Config.network].whitelistedTokens.find(t => t.address === pool.erc20Address);
     if (!token) throw "Token not found!";
 
     let poolSize: number = 0;
@@ -97,26 +101,56 @@ class PoolComponent extends React.Component<Props, PoolComponentState> {
     });
   }
 
-  async deposit(ethAmount: number) {
+  deposit(ethAmount: number) {
     if (this.state.token && this.state.pool) {
-      const poolaService = PoolaService.instance(window);
+      const poola = PoolaContract.get();
+      const tokenContract = Erc20Contract.get(this.state.token.address);
       
       const tokenMultiplier = new BigNumber(10).pow(this.state.token?.decimals);
       const tokenDecimalAmount = new BigNumber(ethAmount)
                                   .times(this.state.pool.pricePerWei)
                                   .times(tokenMultiplier);
 
-      const approved = poolaService.approve(this.state.pool.erc20Address, tokenDecimalAmount);
-      if (approved) {
-        await poolaService.deposit(this.state.pool.name, tokenDecimalAmount);
-        await this.load();
-      }
+      tokenContract.approve(poola.address, tokenDecimalAmount)
+        .onTransactionHash(() => {
+          notification.open({
+            message: `Approval request sent`,
+            description: `The transaction for approving transfer of funds of the ${this.state.token?.symbol} token to the contract's address was sent to the network. The deposit will continue once it has been confirmed (don't close this page)`
+          });
+        })
+        .onConfirmation(() => {
+          notification.open({
+            message: `Approval request confirmed`,
+            description: `The transaction for approving transfer of funds of the ${this.state.token?.symbol} token to the contract's address has been confirmed`
+          });
+
+          if (this.state.pool) {
+            poola.deposit(this.state.pool.name, tokenDecimalAmount)
+              .onTransactionHash(() => {
+                notification.open({
+                  message: `Deposit transaction sent`,
+                  description: `The transaction for depositing your funds was sent. You will receive a notification once it has been confirmed`
+                });
+              })
+              .onConfirmation(async () => {
+                notification.open({
+                  message: `Deposit transaction confirmed`,
+                  description: `Your funds have been successfully deposited`
+                });
+
+                await this.load();
+              })
+              .onError((err) => {
+                console.log(err);
+              });
+          }
+      });
     }
   }
 
-  async buy(ethAmount: number) {
+  buy(ethAmount: number) {
     if (this.state.token && this.state.pool) {
-      const poolaService = PoolaService.instance(window);
+      const poola = PoolaContract.get();
 
       const weiMultiplier = new BigNumber(10).pow(18);
       const weiAmount = new BigNumber(ethAmount).times(weiMultiplier);
@@ -126,8 +160,21 @@ class PoolComponent extends React.Component<Props, PoolComponentState> {
                                   .times(this.state.pool.pricePerWei)
                                   .times(tokenMultiplier);
 
-      await poolaService.buyFromPool(this.state.pool.name, tokenDecimalAmount, weiAmount);
-      await this.load();
+      poola.buyFromPool(this.state.pool.name, tokenDecimalAmount, weiAmount)
+        .onTransactionHash(() => {
+          notification.open({
+            message: `Buy transaction sent`,
+            description: `Your transaction for buying ${this.state.token?.symbol} was sent to the network. You will receive a notification once it has been confirmed`
+          });
+        })
+        .onConfirmation(async () => {
+          notification.open({
+            message: `Buy transaction confirmed`,
+            description: `Your transaction has been confirmed and the tokens have been transfered to your address`
+          });
+
+          await this.load();
+        });
     }
   }
 
@@ -189,7 +236,7 @@ class PoolComponent extends React.Component<Props, PoolComponentState> {
               </Row>
               <Row gutter={16}>
                 {
-                  PoolaService.instance(window).currentAccountAddress().toLowerCase() === pool?.owner.toLowerCase()
+                  Web3Provider.currentAddress.toLowerCase() === pool?.owner.toLowerCase()
                   ? <Col>
                     <Button style={{padding: 0}} type="link" onClick={this.openDepositModal}>
                       <PlusOutlined />

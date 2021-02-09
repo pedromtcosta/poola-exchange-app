@@ -2,11 +2,13 @@ import React, { FC } from 'react';
 import './App.css';
 import { PlusSquareOutlined, SwapOutlined } from "@ant-design/icons";
 
-import { Form, Button, Divider, Input, Menu, PageHeader, Select, InputNumber, FormInstance, Tooltip, Col, Row, List, Popconfirm, Spin, message } from 'antd';
+import { Form, Button, Divider, Input, Menu, PageHeader, Select, InputNumber, FormInstance, Tooltip, Col, Row, List, Popconfirm, Spin, message, notification } from 'antd';
 import Modal from 'antd/lib/modal/Modal';
-import { PoolaService } from "./services/poola-service";
 import PoolComponent from './pool-component';
 import BigNumber from 'bignumber.js';
+import { PoolaContract } from './abstractions/poola-contract';
+import { Web3Provider } from './utils/Web3Provider';
+import { Config } from './utils/Config';
 
 interface AppState {
   createNewPoolVisible: boolean
@@ -32,21 +34,35 @@ class App extends React.Component<any, AppState> {
   }
 
   async withdraw() {
-    await PoolaService.instance(window).withdraw(this.state.allowanceInWei);
-    this.setState({
-      confirmWithdrawVisible: false
-    });
+    const poola = PoolaContract.get();
+    poola.withdraw(this.state.allowanceInWei)
+      .onTransactionHash(() => {
+        this.setState({
+          confirmWithdrawVisible: false
+        });
 
-    message.success(`Successfully withdrew ${this.state.allowance} ETH`);
+        notification.open({
+          message: `Withdraw request sent`,
+          description: `Your transaction for withdrawing ${this.state.allowance} ETH has been created. You will receive a notification once it has been confirmed`
+        });
+      })
+      .onConfirmation(() => {
+        notification.open({
+          message: `Withdraw confirmed`,
+          description: `Your withdraw of ${this.state.allowance} ETH has been confirmed`
+        });
+      });
   };
 
   async showConfirmWithdraw() {
+    const poola = PoolaContract.get();
+
     this.setState({
       finishedGettingAllowance: false,
       confirmWithdrawVisible: true
     });
 
-    const allowanceInWei = await PoolaService.instance(window).getCurrentAddressAllowance();
+    const allowanceInWei = await poola.allowances(Web3Provider.currentAddress);
     const allowanceInEth = Number(allowanceInWei.div(new BigNumber(10).pow(18)));
 
     if (allowanceInEth === 0) {
@@ -85,22 +101,27 @@ class App extends React.Component<any, AppState> {
     this.formRef.current?.submit();
   };
 
-  async handleOnFinish(values: {poolName: string, token: string, weiPrice: number}) {
-    const poolaService = PoolaService.instance(window);
+  handleOnFinish(values: {poolName: string, token: string, weiPrice: number}) {
+    const poola = PoolaContract.get();
 
-    await poolaService.createPool(values.poolName, values.token, values.weiPrice);
+    poola.createPool(values.poolName, values.token, values.weiPrice)
+      .onTransactionHash(() => {
+        notification.open({
+          message: `Pool creation in process`,
+          description: `Your transaction was sent to the network. You will receive a notification once your pool has been created`
+        });
 
-    this.setState({
-      createNewPoolVisible: false
-    });
-
-    const poolsCount = await PoolaService.instance(window).getPoolsCount();
-    if (poolsCount !== this.state.poolsCount) {
-      this.setState({
-        poolsCount: poolsCount,
-        poolsRange: Array.from(Array(Number(poolsCount)).keys())
+        this.setState({
+          createNewPoolVisible: false
+        });
+      })
+      .onConfirmation(async () => {
+        notification.open({
+          message: `Pool ${values.poolName} created`,
+          description: `Your pool was succesfully created. You can deposit to it to increase its size`
+        });
+        await this.refresh();
       });
-    }
   };
 
   constructor(args: any) {
@@ -108,10 +129,17 @@ class App extends React.Component<any, AppState> {
     this.handleOnFinish = this.handleOnFinish.bind(this);
     this.withdraw = this.withdraw.bind(this);
     this.showConfirmWithdraw = this.showConfirmWithdraw.bind(this);
+    this.refresh = this.refresh.bind(this);
   }
 
   async componentDidMount() {
-    const poolsCount = await PoolaService.instance(window).getPoolsCount();
+    this.refresh();
+  }
+
+  async refresh() {
+    const poola = PoolaContract.get();
+    const poolsCount = await poola.getPoolsCount();
+
     this.setState({
       poolsCount: poolsCount,
       poolsRange: Array.from(Array(Number(poolsCount)).keys())
@@ -184,7 +212,7 @@ class App extends React.Component<any, AppState> {
                 <Select
                   placeholder="Select a token"
                   children={
-                    PoolaService
+                    Config.addresses[Config.network]
                       .whitelistedTokens
                       .map(x => <Select.Option value={x.address}>{x.symbol} - {x.name}</Select.Option>)
                   } />
