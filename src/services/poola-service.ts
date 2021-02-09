@@ -6,7 +6,7 @@ import { Token } from "../models/token";
 import BigNumber from "bignumber.js";
 
 export class PoolaService {
-  contractAddress = "0xC8bB03eA621fBaaaEeCBAFa75628A52fB711A8c8"
+  contractAddress = "0xF129acEb9d8117a1397A61BaC82c2bda83753250"
   private static that: PoolaService;
   private web3: Web3;
 
