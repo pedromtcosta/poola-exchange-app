@@ -4,7 +4,7 @@ export class Config {
   static network = 'ropsten'
   static addresses: { [network: string]: {poola: string, whitelistedTokens: Token[]} } = {
     "ropsten": {
-      poola: "0xF129acEb9d8117a1397A61BaC82c2bda83753250",
+      poola: "0x22137554767684F24004579D89ACB8c2E6528A32",
       whitelistedTokens: [
         {
           address: "0xbB34a7E2A070eC193cDdA2df52c2a912f54Ee087",
