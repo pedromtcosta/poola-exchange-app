@@ -23,11 +23,10 @@ export class Erc20Contract {
   }
 
   approve(spender: string, amount: BigNumber): ContractEventEmitter {
-    const e: EventEmitter = this.contract.methods.approve(spender, amount)
+    const e: EventEmitter = this.contract.methods.approve(spender, amount.toFixed())
     .send({
       from: Web3Provider.currentAddress
     });
-
     return new ContractEventEmitter(e);
   }
 }

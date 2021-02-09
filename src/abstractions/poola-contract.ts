@@ -41,7 +41,7 @@ export class PoolaContract {
   }
 
   deposit(poolName: string, amount: BigNumber): ContractEventEmitter {
-    const e: EventEmitter = this.contract.methods.deposit(poolName, amount).send({
+    const e: EventEmitter = this.contract.methods.deposit(poolName, amount.toFixed()).send({
       from: Web3Provider.currentAddress
     });
 
@@ -49,16 +49,16 @@ export class PoolaContract {
   }
 
   buyFromPool(poolName: string, amount: BigNumber, weiAmount: BigNumber): ContractEventEmitter {
-    const e: EventEmitter = this.contract.methods.buyFromPool(poolName, amount).send({
+    const e: EventEmitter = this.contract.methods.buyFromPool(poolName, amount.toFixed()).send({
       from: Web3Provider.currentAddress,
-      value: weiAmount
+      value: weiAmount.toFixed()
     });
 
     return new ContractEventEmitter(e);
   }
 
   withdraw(amount: BigNumber): ContractEventEmitter {
-    const e: EventEmitter = this.contract.methods.withdraw(amount.toString()).send({
+    const e: EventEmitter = this.contract.methods.withdraw(amount.toFixed()).send({
       from: Web3Provider.currentAddress,
     });
 
