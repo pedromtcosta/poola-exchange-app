@@ -3,7 +3,6 @@ import PoolaAbi from "../contracts/Poola.json";
 import ERC20Abi from "../contracts/ERC20.json";
 import { Pool } from "../models/pool";
 import { Token } from "../models/token";
-import { AppleOutlined } from "@ant-design/icons";
 import BigNumber from "bignumber.js";
 
 export class PoolaService {
